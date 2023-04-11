@@ -1,10 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OAuth2Model } from '@t00nday/nestjs-oauth2-server';
 import { RequestAuthenticationModel } from 'oauth2-server';
-import {
-  OAuth2Client,
-  OAuth2ClientDocument,
-} from './schemas/client.schema';
+import { OAuth2Client, OAuth2ClientDocument } from './schemas/client.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -18,14 +15,10 @@ import { AuthorizationCodeDocument } from './schemas/authCode.schema';
 @OAuth2Model()
 export class Oauth2Service implements RequestAuthenticationModel {
   constructor(
-    @InjectModel('client')
-    private clientModel: Model<OAuth2ClientDocument>,
-    @InjectModel('accesstoken')
-    private accessModel: Model<AccessTokenDocument>,
-    @InjectModel('refreshtoken')
-    private refreshModel: Model<RefreshTokenDocument>,
-    @InjectModel('authCode')
-    private authCodeModel: Model<AuthorizationCodeDocument>,
+    @InjectModel('client') private oauthClientModel: Model<OAuth2ClientDocument>,
+    @InjectModel('accesstoken') private accessModel: Model<AccessTokenDocument>,
+    @InjectModel('refreshtoken') private refreshModel: Model<RefreshTokenDocument>,
+    @InjectModel('authcode') private authCodeModel: Model<AuthorizationCodeDocument>,
   ) {}
 
   async getClient(
@@ -38,12 +31,16 @@ export class Oauth2Service implements RequestAuthenticationModel {
       grants: string[];
     };
   }> {
+    console.log('model', await this.oauthClientModel)
     try {
       let client;
       if (!clientSecret)
-        client = await this.clientModel.findOne({ clientId });
+        client = await this.oauthClientModel.findOne({ clientId });
       else
-        client = await this.clientModel.findOne({ clientId, clientSecret });
+        client = await this.oauthClientModel.findOne({
+          clientId,
+          clientSecret,
+        });
       if (!client) throw new NotFoundException();
 
       return {

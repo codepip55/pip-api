@@ -10,6 +10,12 @@ import { AuthorizationCodeSchema } from './schemas/authCode.schema';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([
+      { name: 'client', schema: OAuth2ClientSchema },
+      { name: 'accesstoken', schema: AccessTokenSchema },
+      { name: 'refreshtoken', schema: RefreshTokenSchema },
+      { name: 'authcode', schema: AuthorizationCodeSchema },
+    ]),
     OAuth2ServerModule.forRoot({
       accessTokenLifetime: 60 * 60 * 24, // 1 day
       allowBearerTokensInQueryString: true,
@@ -18,12 +24,6 @@ import { AuthorizationCodeSchema } from './schemas/authCode.schema';
       refreshTokenLifetime: 60 * 60 * 24 * 7, // 1 week
       requireClientAuthentication: true,
     }),
-    MongooseModule.forFeature([
-      { name: 'client', schema: OAuth2ClientSchema },
-      { name: 'accesstoken', schema: AccessTokenSchema },
-      { name: 'refreshtoken', schema: RefreshTokenSchema },
-      { name: 'authCode', schema: AuthorizationCodeSchema },
-    ]),
   ],
   controllers: [Oauth2Controller],
   providers: [Oauth2Service],
