@@ -9,6 +9,21 @@ import {
 import { of } from 'rxjs';
 import { Token, AuthorizationCode } from 'oauth2-server';
 
+/**
+ * FLOW
+ * User requests token
+ * - if refresh token && expired => ask for username/password
+ * - if first time => ask for password
+ * - if refresh token && !expired => grant access token and new refresh token
+ * 
+ * User inputs password
+ * - verify with argon2
+ * - if correct, grant tokens
+ * 
+ * After receiving tokens
+ * - get JWT from auth module
+ */
+
 @Controller('oauth2')
 export class Oauth2Controller {
   @Post('token')
