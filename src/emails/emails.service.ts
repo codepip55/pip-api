@@ -1,18 +1,15 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Email, EmailDocument } from './schemas/email.schema';
 import { Model } from 'mongoose';
-import { CreateEmailDto, UpdateEmailDto } from './dto/email.dto';
 import { Cron } from '@nestjs/schedule';
 import { CronExpression } from '@nestjs/schedule/dist';
 import * as SendGrid from '@sendgrid/mail';
-import { Member } from 'src/members/schemas/member.schema';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
+
+import { Email, EmailDocument } from './schemas/email.schema';
+import { CreateEmailDto, UpdateEmailDto } from './dto/email.dto';
+import { Member } from 'src/members/schemas/member.schema';
 
 @Injectable()
 export class EmailsService {

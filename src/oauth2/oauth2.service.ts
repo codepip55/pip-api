@@ -1,13 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OAuth2Model } from '@t00nday/nestjs-oauth2-server';
 import { RequestAuthenticationModel } from 'oauth2-server';
-import { OAuth2Client, OAuth2ClientDocument } from './schemas/client.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  AccessTokenDocument,
-  RefreshTokenDocument,
-} from './schemas/token.schema';
+
+import { OAuth2Client, OAuth2ClientDocument } from './schemas/client.schema';
+import { AccessTokenDocument, RefreshTokenDocument, } from './schemas/token.schema';
 import { User } from 'src/users/schemas/users.schema';
 import { AuthorizationCodeDocument } from './schemas/authCode.schema';
 

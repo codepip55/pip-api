@@ -4,8 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose/dist/common';
-import { User, UserDocument } from './schemas/users.schema';
 import { Model } from 'mongoose';
+
+import { User, UserDocument } from './schemas/users.schema';
 import { GroupsService } from 'src/groups/groups.service';
 
 @Injectable()

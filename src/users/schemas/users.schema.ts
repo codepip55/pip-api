@@ -2,6 +2,7 @@ import { Schema, Prop } from '@nestjs/mongoose';
 import { SchemaFactory } from '@nestjs/mongoose/dist';
 import { Member } from 'src/members/schemas/member.schema';
 import mongoose from 'mongoose';
+import { Group } from 'src/groups/schemas/group.schema';
 
 export type UserDocument = User & Document;
 
@@ -13,19 +14,40 @@ export class User {
   }
 
   @Prop({ required: true })
-  ghUsername: string;
-
-  @Prop({ required: false })
-  ghName?: string;
+  nameFirst: string;
 
   @Prop({ required: true })
-  ghId: number;
+  nameLast: string;
+
+  @Prop({ required: true })
+  nameFull: string;
 
   @Prop({
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'member' }],
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'group' }],
     required: true,
   })
-  member: Member;
+  groups: Group[];
+
+  // Not stored in DB
+  perms: string[];
+
+  @Prop({ required: true })
+  isActive: boolean;
+
+  @Prop({ required: true })
+  isBanned: boolean;
+
+  @Prop({ required: true })
+  username: string;
+
+  @Prop({ required: true })
+  email: string;
+}
+
+export interface UserInterface {
+  id: string;
+  username: string;
+  email: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
