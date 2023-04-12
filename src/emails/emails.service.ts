@@ -9,7 +9,7 @@ import { Request } from 'express';
 
 import { Email, EmailDocument } from './schemas/email.schema';
 import { CreateEmailDto, UpdateEmailDto } from './dto/email.dto';
-import { Member } from 'src/members/schemas/member.schema';
+import { User } from 'src/users/schemas/users.schema';
 
 @Injectable()
 export class EmailsService {
@@ -164,7 +164,7 @@ export class EmailsService {
     this.emailModel.deleteMany({ deletedTimestamp: { $lt: timeStamp } }).exec();
   }
 
-  async createEmail(dto: CreateEmailDto, member: Member): Promise<Email> {
+  async createEmail(dto: CreateEmailDto, member: User): Promise<Email> {
     const email = new this.emailModel({
       sender: {
         name: dto.sender.name,

@@ -29,7 +29,7 @@ export class EmailsController {
 
     return this.emailService.findAllEmails(
       { sort, offset, limit, query },
-      user.member.email,
+      user.email,
     );
   }
 
@@ -38,7 +38,7 @@ export class EmailsController {
   getEmailById(@Param('id') id: string, @Req() req: Request): Promise<Email> {
     const user = req.user as User;
 
-    return this.emailService.findEmailById(id, user.member.email);
+    return this.emailService.findEmailById(id, user.email);
   }
 
   @Get('sent')
@@ -48,7 +48,7 @@ export class EmailsController {
   ): Promise<{ count: number; data: Email[] }> {
     const user = req.user as User;
 
-    return this.emailService.findSentEmails(user.member.email);
+    return this.emailService.findSentEmails(user.email);
   }
 
   /**
@@ -64,7 +64,7 @@ export class EmailsController {
   ): Promise<{ count: number; data: Email[] }> {
     const user = req.user as User;
 
-    return this.emailService.findEmailBySender(q, user.member.email);
+    return this.emailService.findEmailBySender(q, user.email);
   }
 
   @Get('tags')
@@ -76,7 +76,7 @@ export class EmailsController {
     const tags = q.split(' ');
     const user = req.user as User;
 
-    return this.emailService.findEmailsByTags(tags, user.member.email);
+    return this.emailService.findEmailsByTags(tags, user.email);
   }
 
   @Put('id/:id')
@@ -88,7 +88,7 @@ export class EmailsController {
   ): Promise<Email> {
     const user = req.user as User;
 
-    return this.emailService.updateEmail(id, body, user.member.email);
+    return this.emailService.updateEmail(id, body, user.email);
   }
 
   @Post()
@@ -99,7 +99,7 @@ export class EmailsController {
   ): Promise<Email> {
     const user = req.user as User;
 
-    return this.emailService.createEmail(body, user.member);
+    return this.emailService.createEmail(body, user);
   }
 
   @Delete(':id')
@@ -107,7 +107,7 @@ export class EmailsController {
   deleteEmail(@Param('id') id: string, @Req() req: Request): Promise<Email> {
     const user = req.user as User;
 
-    return this.emailService.markEmailForDelete(id, user.member.email);
+    return this.emailService.markEmailForDelete(id, user.email);
   }
 
   @Post('receive')

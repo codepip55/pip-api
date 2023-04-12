@@ -11,7 +11,6 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
-import { GithubAuthGuard } from './github/github-auth.guard';
 
 @ApiBearerAuth()
 @Controller('auth')
@@ -23,7 +22,7 @@ export class AuthController {
   ) {}
 
   @Get('github')
-  @UseGuards(GithubAuthGuard)
+  @UseGuards() // TODO: Add Auth guard
   authenticateWithGithub(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,

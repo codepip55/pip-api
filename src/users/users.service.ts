@@ -42,7 +42,7 @@ export class UsersService {
       .populate('member', 'nameFull groups')
       .exec();
 
-    if (user.member) user.member.perms = await this.getPermissions(user);
+    user.perms = await this.getPermissions(user);
 
     return user;
   }
@@ -57,7 +57,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException();
 
-    if (user.member) user.member.perms = await this.getPermissions(user);
+    user.perms = await this.getPermissions(user);
 
     return user;
   }
@@ -75,22 +75,20 @@ export class UsersService {
     const savedUser = await (
       await user.save()
     ).populate('member.groups', 'sku');
-    if (savedUser.member)
-      savedUser.member.perms = await this.getPermissions(savedUser);
+    if (savedUser)
+      savedUser.perms = await this.getPermissions(savedUser);
 
     return savedUser;
   }
 
   async getPermissions(user: User): Promise<string[]> {
-    if (!user.member)
-      throw new ForbiddenException('No member linked with this user!');
-    if (!user.member.groups || user.member.groups.length == 0) return [];
+    if (!user.groups || user.groups.length == 0) return [];
 
     const { data: allGroups } = await this.groupsService.findAll();
     const userPerms = new Set<string>();
 
     // Add permissions from each of user's groups
-    user.member.groups.forEach((userGroup) => {
+    user.groups.forEach((userGroup) => {
       const groupRecord = allGroups.find((g) => g.sku === userGroup.sku);
       groupRecord.perms.forEach((p) => userPerms.add(p));
     });
@@ -99,8 +97,7 @@ export class UsersService {
   }
 
   hasPerms(user: User, ...perms: any[]) {
-    if (!user.member) return false;
     if (user === null) return false;
-    return perms.every((p) => user.member.perms.includes(p));
+    return perms.every((p) => user.perms.includes(p));
   }
 }

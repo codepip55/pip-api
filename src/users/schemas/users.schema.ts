@@ -1,6 +1,5 @@
 import { Schema, Prop } from '@nestjs/mongoose';
 import { SchemaFactory } from '@nestjs/mongoose/dist';
-import { Member } from 'src/members/schemas/member.schema';
 import mongoose from 'mongoose';
 import { Group } from 'src/groups/schemas/group.schema';
 
@@ -41,12 +40,6 @@ export class User {
   username: string;
 
   @Prop({ required: true })
-  email: string;
-}
-
-export interface UserInterface {
-  id: string;
-  username: string;
   email: string;
 }
 

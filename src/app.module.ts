@@ -8,7 +8,6 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { LoggingFilter } from './utils/logging.filter';
-import { MembersModule } from './members/members.module';
 import { GroupsModule } from './groups/groups.module';
 import { EmailsModule } from './emails/emails.module';
 import { Oauth2Module } from './oauth2/oauth2.module';
@@ -25,7 +24,6 @@ import { Oauth2Module } from './oauth2/oauth2.module';
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     UsersModule,
-    MembersModule,
     GroupsModule,
     EmailsModule,
     ScheduleModule.forRoot(),
