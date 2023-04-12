@@ -13,10 +13,10 @@ import { AuthorizationCodeDocument } from './schemas/authCode.schema';
 @OAuth2Model()
 export class Oauth2Service implements RequestAuthenticationModel {
   constructor(
-    @InjectModel('client') private oauthClientModel: Model<OAuth2ClientDocument>,
     @InjectModel('accesstoken') private accessModel: Model<AccessTokenDocument>,
     @InjectModel('refreshtoken') private refreshModel: Model<RefreshTokenDocument>,
     @InjectModel('authcode') private authCodeModel: Model<AuthorizationCodeDocument>,
+    @InjectModel('client') private oauthClientModel: Model<OAuth2ClientDocument>
   ) {}
 
   async getClient(
@@ -29,13 +29,13 @@ export class Oauth2Service implements RequestAuthenticationModel {
       grants: string[];
     };
   }> {
-    console.log('model', await this.oauthClientModel)
+    console.log('model', this.oauthClientModel)
     try {
       let client;
       if (!clientSecret)
-        client = await this.oauthClientModel.findOne({ clientId });
+        client = this.oauthClientModel.findOne({ clientId });
       else
-        client = await this.oauthClientModel.findOne({
+        client = this.oauthClientModel.findOne({
           clientId,
           clientSecret,
         });
