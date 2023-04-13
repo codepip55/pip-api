@@ -159,7 +159,7 @@ export class Oauth2Service implements RequestAuthenticationModel {
     return true;
   }
 
-  async validateScope(
+  validateScope(
     token: {
       accessToken: string;
       client: {
@@ -243,7 +243,15 @@ export class Oauth2Service implements RequestAuthenticationModel {
     return true;
   }
 
-  async getAccessToken(accessToken: string) {
+  async getAccessToken(accessToken: string): Promise<{
+    accessToken: string,
+    accessTokenExpiresAt: Date,
+    scope: string[],
+    client: {
+      id: string
+    },
+    user: User
+  }> {
     const token = await this.accessModel.findOne({ accessToken });
     if (!token) throw new NotFoundException();
 
