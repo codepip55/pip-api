@@ -33,9 +33,9 @@ export class Oauth2Service implements RequestAuthenticationModel {
     try {
       let client;
       if (!clientSecret)
-        client = this.oauthClientModel.findOne({ clientId });
+        client = await this.oauthClientModel.findOne({ clientId });
       else
-        client = this.oauthClientModel.findOne({
+        client = await this.oauthClientModel.findOne({
           clientId,
           clientSecret,
         });
