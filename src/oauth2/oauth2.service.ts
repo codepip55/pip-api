@@ -1,260 +1,136 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { OAuth2Model } from '@t00nday/nestjs-oauth2-server';
-import { RequestAuthenticationModel } from 'oauth2-server';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { add } from "date-fns";
+import * as crypto from 'crypto';
 
-import { OAuth2Client, OAuth2ClientDocument } from './schemas/client.schema';
-import { AccessTokenDocument, RefreshTokenDocument, } from './schemas/token.schema';
-import { User } from 'src/users/schemas/users.schema';
-import { AuthorizationCodeDocument } from './schemas/authCode.schema';
+import { AuthorizationCode, AuthorizationCodeDocument } from "./schemas/authCode.schema";
+import { OAuth2Client } from "./schemas/client.schema";
+import { User } from "src/users/schemas/users.schema";
+import { AccessToken, RefreshToken, RefreshTokenDocument } from "./schemas/token.schema";
 
 @Injectable()
-@OAuth2Model()
-export class Oauth2Service implements RequestAuthenticationModel {
+export class Oauth2Service {
   constructor(
-    @InjectModel('accesstoken') private accessModel: Model<AccessTokenDocument>,
-    @InjectModel('refreshtoken') private refreshModel: Model<RefreshTokenDocument>,
     @InjectModel('authcode') private authCodeModel: Model<AuthorizationCodeDocument>,
-    @InjectModel('client') private oauthClientModel: Model<OAuth2ClientDocument>
+    @InjectModel('client') private clientModel: Model<OAuth2Client>,
+    @InjectModel('accesstoken') private accessTokenModel: Model<AccessToken>,
+    @InjectModel('refreshtoken') private refreshTokenModel: Model<RefreshTokenDocument>
   ) {}
 
-  async getClient(
-    clientId: string,
-    clientSecret?: string,
-  ): Promise<{
-    client: {
-      id: string;
-      redirectUris: string[];
-      grants: string[];
-    };
-  }> {
-    console.log('model', this.oauthClientModel)
-    try {
-      let client;
-      if (!clientSecret)
-        client = this.oauthClientModel.findOne({ clientId });
-      else
-        client = this.oauthClientModel.findOne({
-          clientId,
-          clientSecret,
-        });
-      if (!client) throw new NotFoundException();
-
-      return {
-        client: {
-          id: client.clientId,
-          redirectUris: client.redirectUris,
-          grants: client.clientGrants,
-        },
-      };
-    } catch (err) {
-      console.log(1, err);
-    }
+  // Utils
+  generateRandomToken(length: number = 80) {
+    return crypto.randomBytes(length * 2).toString("hex")
   }
 
-  async saveToken(
-    token: {
-      accessToken: string;
-      accessTokenExpiresAt: Date;
-      refreshToken: string;
-      refreshTokenExpiresAt: Date;
-      scope: string;
-    },
-    client: OAuth2Client,
-    user: User,
-  ): Promise<{
-    token: {
-      accessToken: string;
-      accessTokenExpiresAt: Date;
-      refreshToken: string;
-      refreshTokenExpiresAt: Date;
-      scope: string[];
-      client: {
-        id: string;
-      };
-      user: User;
-    };
-  }> {
-    const savedAccessToken = await new this.accessModel({
-      accessToken: token.accessToken,
-      accessTokenExpiresAt: token.accessTokenExpiresAt,
+  // Authorization Code
+
+  async findAuthCode(code: string): Promise<AuthorizationCode> {
+    const authCode = await this.authCodeModel.findOne({ authorizationCode: code })
+    if (!authCode) return null;
+    return authCode;
+  }
+
+  async createAuthCode(client: OAuth2Client, user: User, scopes: string[], redirectUri: string): Promise<AuthorizationCode> {
+    const newCode = new this.authCodeModel({
+      authorizationCode: this.generateRandomToken(),
+      expiresAt: add(new Date(), {
+        minutes: 15
+      }),
+      redirectUri,
+      scopes,
       client,
-      user,
-      scope: token.scope,
-    }).save();
-
-    const savedRefreshToken = await new this.refreshModel({
-      refreshToken: token.refreshToken,
-      refreshTokenExpiresAt: token.refreshTokenExpiresAt,
-      client,
-      user,
-    }).save();
-
-    return {
-      token: {
-        accessToken: savedAccessToken.accessToken,
-        accessTokenExpiresAt: savedAccessToken.accessTokenExpiresAt,
-        refreshToken: savedRefreshToken.refreshToken,
-        refreshTokenExpiresAt: savedRefreshToken.refreshTokenExpiresAt,
-        scope: savedAccessToken.scope,
-        client: {
-          id: savedAccessToken.client.clientId,
-        },
-        user: savedAccessToken.user,
-      },
-    };
-  }
-
-  async saveAuthorizationCode(
-    code: {
-      authorizationCode: string;
-      expiresAt: Date;
-      redirectUri: string;
-      scope?: string;
-    },
-    client: OAuth2Client,
-    user: User,
-  ): Promise<{
-    code: {
-      authorizationCode: string;
-      expiresAt: Date;
-      redirectUri: string;
-      scope: string;
-      client: {
-        id: string;
-      };
-      user: User;
-    };
-  }> {
-    const savedAuthCode = await new this.authCodeModel({
-      authorizationCode: code.authorizationCode,
-      expiresAt: code.expiresAt,
-      redirectUri: code.redirectUri,
-      scope: code.scope,
-      client,
-      user,
-    }).save();
-
-    return {
-      code: {
-        authorizationCode: savedAuthCode.authorizationCode,
-        expiresAt: savedAuthCode.expiresAt,
-        redirectUri: savedAuthCode.redirectUri,
-        scope: savedAuthCode.scope,
-        client: {
-          id: savedAuthCode.client.clientId,
-        },
-        user: savedAuthCode.user,
-      },
-    };
-  }
-
-  async revokeAuthorizationCode(code: string): Promise<boolean> {
-    const authCode = await this.authCodeModel
-      .findOneAndDelete({ authorizationCode: code })
-      .exec();
-    if (!authCode) return false;
-
-    return true;
-  }
-
-  async validateScope(
-    token: {
-      accessToken: string;
-      client: {
-        id: string;
-      };
-      user: User;
-      scope: string;
-    },
-    scope: string,
-  ) {
-    if (!token.scope) return false;
-
-    const requiredScopes = scope.split(' ');
-    const authorizedScopes = token.scope.split(' ');
-    return requiredScopes.every((s) => authorizedScopes.indexOf(s) >= 0);
-  }
-
-  async getAuthorizationCode(authorizationCode: string): Promise<{
-    code: {
-      code: string;
-      expiresAt: Date;
-      redirectUri: string;
-      scope: string;
-      client: {
-        id: string;
-      };
-      user: User;
-    };
-  }> {
-    const code = await this.authCodeModel.findOne({ authorizationCode });
-    if (!code) throw new NotFoundException();
-
-    return {
-      code: {
-        code: code.authorizationCode,
-        expiresAt: code.expiresAt,
-        redirectUri: code.redirectUri,
-        scope: code.scope,
-        client: {
-          id: code.client.clientId,
-        },
-        user: code.user,
-      },
-    };
-  }
-
-  async getRefreshToken(refreshToken: string): Promise<{
-    token: {
-      refreshToken: string;
-      refreshTokenExpiresAt: Date;
-      client: {
-        id: string;
-      };
-      user: User;
-    };
-  }> {
-    const token = await this.refreshModel.findOne({ refreshToken });
-    if (!token) throw new NotFoundException();
-
-    return {
-      token: {
-        refreshToken: token.refreshToken,
-        refreshTokenExpiresAt: token.refreshTokenExpiresAt,
-        client: {
-          id: token.client.clientId,
-        },
-        user: token.user,
-      },
-    };
-  }
-
-  async revokeToken(token: {
-    refreshToken: string;
-    refreshTokenExpiresAt?: Date;
-    scope?: string;
-  }): Promise<boolean> {
-    const refreshToken = await this.refreshModel.findOneAndDelete({
-      refreshToken: token.refreshToken,
+      user
     });
-    if (!refreshToken) return false;
-    return true;
+    return newCode.save();
   }
 
-  async getAccessToken(accessToken: string) {
-    const token = await this.accessModel.findOne({ accessToken });
-    if (!token) throw new NotFoundException();
+  async revokeAuthCode(code: string): Promise<AuthorizationCode> {
+    const authCode = this.authCodeModel.findOneAndDelete({ authorizationCode: code })
+    return authCode;
+  }
 
-    return {
-      accessToken: token.accessToken,
-      accessTokenExpiresAt: token.accessTokenExpiresAt,
-      scope: token.scope,
-      client: {
-        id: token.client.clientId,
-      },
-      user: token.user,
-    };
+  // Clients
+
+  async findClient(clientId: string, clientSecret?: string): Promise<OAuth2Client> {
+    if (clientSecret) {
+      const client = await this.clientModel.findOne({ clientId, clientSecret })
+      if (!client) throw new NotFoundException();
+      return client;
+    }
+
+    const client = await this.clientModel.findOne({ clientId })
+    if (!client) throw new NotFoundException();
+    return client;
+  }
+
+  // Access Tokens
+
+  async findAccessToken(token: string): Promise<AccessToken> {
+    const at = await this.accessTokenModel.findOne({ accessToken: token })
+    if (!at) null;
+    return at;
+  }
+
+  async createAccessToken(
+    client: OAuth2Client,
+    scopes: string[],
+    user: User
+  ): Promise<AccessToken> {
+    const newToken = new this.accessTokenModel({
+      accessToken: this.generateRandomToken(),
+      accessTokenExpiresAt: add(new Date(), {
+        hours: 2
+      }),
+      client,
+      user,
+      scopes
+    })
+    return newToken.save()
+  }
+
+  async revokeAccessToken(token: string): Promise<AccessToken> {
+    const at = await this.accessTokenModel.findOneAndDelete({ accessToken: token })
+    if (!at) throw new NotFoundException();
+    return at;
+  }
+
+  async revokeAllUsersAccessTokens(user: User): Promise<void> {
+    await this.accessTokenModel.deleteMany({ user })
+  }
+
+  // Refresh Tokens
+  
+  async findRefreshToken(token: string): Promise<RefreshToken> {
+    const rt = await this.refreshTokenModel.findOne({ refreshToken: token })
+    if (!rt) null;
+    return rt;
+  }
+
+  async createRefreshToken(
+    client: OAuth2Client,
+    user: User,
+    scopes: string[]
+  ): Promise<RefreshToken> {
+    const newToken = new this.refreshTokenModel({
+      refreshToken: this.generateRandomToken(),
+      refreshTokenExpiresAt: add(new Date(), {
+        days: 7
+      }),
+      client,
+      user,
+      scopes
+    })
+    return newToken.save()
+  }
+
+  async revokeRefreshToken(token: string): Promise<RefreshToken> {
+    const rt = await this.refreshTokenModel.findOneAndDelete({ refreshToken: token })
+    if (!rt) throw new NotFoundException();
+    return rt;
+  }
+
+  async revokeAllUsersRefreshTokens(user: User): Promise<void> {
+    await this.refreshTokenModel.deleteMany({ user })
   }
 }

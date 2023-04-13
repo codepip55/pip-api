@@ -1,46 +1,122 @@
-import { Controller, Post } from '@nestjs/common';
-import {
-  OAuth2Authenticate,
-  OAuth2Authorize,
-  OAuth2Token,
-  OAuth2Authorization,
-  OAuth2RenewToken,
-} from '@t00nday/nestjs-oauth2-server';
-import { of } from 'rxjs';
-import { Token, AuthorizationCode } from 'oauth2-server';
+import { Controller, ForbiddenException, Get, Post, Query, Req, Res } from '@nestjs/common';
 
-/**
- * FLOW
- * User requests token
- * - if refresh token && expired => ask for username/password
- * - if first time => ask for password
- * - if refresh token && !expired => grant access token and new refresh token
- * 
- * User inputs password
- * - verify with argon2
- * - if correct, grant tokens
- * 
- * After receiving tokens
- * - get JWT from auth module
- */
+import { Oauth2Service } from './oauth2.service';
+import { getSeconds } from 'date-fns';
+import { Request, Response } from 'express';
+import { el } from 'date-fns/locale';
+import { ConfigService } from '@nestjs/config';
+import { User } from 'src/users/schemas/users.schema';
 
 @Controller('oauth2')
 export class Oauth2Controller {
-  @Post('token')
-  @OAuth2Authenticate()
-  authenticateClient(@OAuth2Token() token: Token) {
-    return of(token);
-  }
+    constructor(
+        private oauthService: Oauth2Service,
+        private configService: ConfigService
+    ) {}
 
-  @Post('authorize')
-  @OAuth2Authorize()
-  authorizeClient(@OAuth2Authorization() authorization: AuthorizationCode) {
-    return of(authorization);
-  }
+    @Get('authorize')
+    async authorize(@Query() qs: Record<string, any>, @Res() res: Response, @Req() req: Request) {
+        const response_type = qs.response_type;
+        const client_id = qs.client_id;
+        const redirect_uri = qs.redirect_uri;
+        const state = qs.state;
+        const scope = qs.scope
 
-  @Post('refresh')
-  @OAuth2RenewToken()
-  renewToken(@OAuth2Token() token: Token) {
-    return of(token);
-  }
+        if (response_type !== 'code') throw new ForbiddenException('response_type must be "code"');
+
+        const client = await this.oauthService.findClient(client_id);
+
+        if (!client.redirectUris.includes(redirect_uri)) throw new ForbiddenException('Invalid redirect_uri');
+
+        const scopes = scope.split(' ');
+
+        // If user has not logged in, show login page
+        let user;
+        if (req.user) {
+            user = req.user as User
+        } else {
+            const params = new URLSearchParams({
+                response_type,
+                client_id,
+                redirect_uri,
+                state,
+                scope
+            })
+            res.redirect(`${this.configService.get<string>('AUTH_CLIENT')}?redirect=${this.configService.get<string>('THIS_URI')}/oauth/authorize&${params.toString()}`)
+        }
+
+        const authCode = await this.oauthService.createAuthCode(
+            client,
+            user,
+            scopes,
+            redirect_uri
+        )
+
+        res.redirect(`${authCode.redirectUri}?code=${authCode.authorizationCode}`)
+    }
+
+    @Post('token')
+    async token(@Query() qs: Record<string, string>) {
+        const code = qs.code;
+        const client_id = qs.client_id;
+        const client_secret = qs.client_secret;
+        const grant_type = qs.grant_type;
+        const redirect_uri = qs.redirect_uri;
+        const refresh_token = qs.refresh_token;
+
+        if (!client_id || !client_secret || !grant_type || !redirect_uri) throw new ForbiddenException('Request is missing required fields');
+
+        const client = await this.oauthService.findClient(client_id, client_secret);
+        if (!client.redirectUris.includes(redirect_uri)) throw new ForbiddenException('Invalid redirect_uri');
+
+        if (grant_type === 'authorization_code') {
+            if (!code) throw new ForbiddenException('Missing code');
+
+            const authCode = await this.oauthService.findAuthCode(code);
+            if (!authCode || authCode.expiresAt < new Date()) throw new ForbiddenException('Invalid code')
+
+            const accessToken = await this.oauthService.createAccessToken(authCode.client, authCode.scopes, authCode.user);
+            const refreshToken = await this.oauthService.createRefreshToken(accessToken.client, accessToken.user, accessToken.scopes);
+            await this.oauthService.revokeAuthCode(authCode.authorizationCode);
+
+            return {
+                access_token: accessToken.accessToken,
+                expires_in: getSeconds(accessToken.accessTokenExpiresAt),
+                refreshToken: refreshToken.refreshToken,
+                token_type: 'Bearer',
+                scope: accessToken.scopes
+            }
+        } else if (grant_type === 'refresh_token') {
+            if (!refresh_token) throw new ForbiddenException('Missing refresh token')
+
+            const oldRefreshToken = await this.oauthService.findRefreshToken(refresh_token);
+            if (!oldRefreshToken) throw new ForbiddenException('Invalid refresh_token')
+
+            this.oauthService.revokeAllUsersAccessTokens(oldRefreshToken.user);
+            const accessToken = await this.oauthService.createAccessToken(oldRefreshToken.client, oldRefreshToken.scopes, oldRefreshToken.user)
+
+            this.oauthService.revokeAllUsersRefreshTokens(oldRefreshToken.user);
+            const refreshToken = await this.oauthService.createRefreshToken(accessToken.client, accessToken.user, accessToken.scopes);
+
+            return {
+                access_token: accessToken.accessToken,
+                expires_in: getSeconds(accessToken.accessTokenExpiresAt),
+                refreshToken: refreshToken.refreshToken,
+                token_type: 'Bearer',
+                scope: accessToken.scopes
+            }
+        } else {
+            throw new ForbiddenException('Invalid grant_type');
+        }
+    }
+
+    @Post('token/revoke')
+    async revokeToken(@Query() qs: Record<string, string>) {
+        const token_type = qs.token_type;
+        const token = qs.token;
+
+        if (token_type === 'access_token') return await this.oauthService.revokeAccessToken(token);
+        if (token_type === 'refresh_token') return await this.oauthService.revokeRefreshToken(token);
+        throw new ForbiddenException('Invalid token_type');
+    }
 }

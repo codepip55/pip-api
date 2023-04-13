@@ -27,7 +27,7 @@ export class AccessToken {
   user: User;
 
   @Prop({ required: true })
-  scope: string[];
+  scopes: string[];
 }
 
 @Schema()
@@ -49,6 +49,9 @@ export class RefreshToken {
     required: true,
   })
   user: User;
+
+  @Prop({ required: true })
+  scopes: string[];
 }
 
 export const AccessTokenSchema = SchemaFactory.createForClass(AccessToken);

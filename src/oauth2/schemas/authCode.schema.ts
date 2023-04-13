@@ -17,7 +17,7 @@ export class AuthorizationCode {
   redirectUri: string;
 
   @Prop({ required: true })
-  scope?: string;
+  scopes?: string[];
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'client' }],

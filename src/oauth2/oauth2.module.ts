@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { OAuth2ServerModule } from '@t00nday/nestjs-oauth2-server';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { Oauth2Controller } from './oauth2.controller';
@@ -16,14 +15,6 @@ import { AuthorizationCodeSchema } from './schemas/authCode.schema';
       { name: 'refreshtoken', schema: RefreshTokenSchema },
       { name: 'authcode', schema: AuthorizationCodeSchema },
     ]),
-    OAuth2ServerModule.forRoot({
-      accessTokenLifetime: 60 * 60 * 24, // 1 day
-      allowBearerTokensInQueryString: true,
-      allowEmptyState: true,
-      authorizationCodeLifetime: 5 * 60, // 50 minutes
-      refreshTokenLifetime: 60 * 60 * 24 * 7, // 1 week
-      requireClientAuthentication: true,
-    }),
   ],
   controllers: [Oauth2Controller],
   providers: [Oauth2Service],
