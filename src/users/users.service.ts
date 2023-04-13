@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 
 import { User, UserDocument } from './schemas/users.schema';
 import { GroupsService } from 'src/groups/groups.service';
+import { UserDto } from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
@@ -17,68 +18,63 @@ export class UsersService {
   ) {}
 
   async findById(id: string): Promise<User> {
-    const user = await this.userModel
-      .findById(id)
-      .populate('member', 'nameFull email')
-      .exec();
+    const user = await this.userModel.findById(id)
     if (!user) throw new NotFoundException();
     return user;
   }
 
-  async findByGhIdAndUpdate(pUser: any): Promise<User> {
-    const u = pUser.data;
-    const ghId = u.id;
-
-    const user = await this.userModel
-      .findOneAndUpdate(
-        { ghId },
-        {
-          ghName: u.name,
-          ghUsername: u.login,
-        },
-        { new: true },
-      )
-      .populate('member.groups', 'sku')
-      .populate('member', 'nameFull groups')
+  async findByName(name: string): Promise<User[]> {
+    const users = await this.userModel
+      .find({ $text: { $search: name } })
       .exec();
+    return users;
+  }
 
-    user.perms = await this.getPermissions(user);
-
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.userModel.findOne({ email })
+    if (!user) throw new NotFoundException()
     return user;
   }
 
-  async findByGhId(id: string | number): Promise<User> {
-    id = Number(id);
-    const user = await this.userModel
-      .findOne({ ghId: id })
-      .populate('member.groups', 'name description sku')
-      .populate('member', 'nameFull groups')
-      .exec();
+  async createUser(body: UserDto): Promise<User> {
+    const newUser = new this.userModel({
+      body,
+      nameFull: `${body.nameFirst} ${body.nameLast}`
+    })
+    return newUser.save()
+  }
 
+  async updateUser(id: string, dto: UserDto): Promise<User> {
+    const user = await this.userModel.findById(id);
     if (!user) throw new NotFoundException();
 
-    user.perms = await this.getPermissions(user);
+    user.nameFirst = dto.nameFirst;
+    user.nameLast = dto.nameLast;
+    user.nameFull = `${dto.nameFirst} ${dto.nameLast}`;
+    // @ts-expect-error DTO passes group SKUs, while schema accepts the full group object
+    user.groups = dto.groups;
+    user.isActive = dto.isActive;
+    user.isBanned = dto.isBanned;
+    user.email = dto.email;
+    if (dto.customDomainEmail) user.customDomainEmail = dto.customDomainEmail;
 
+    return user.save();
+  }
+
+  async deleteUser(id: string): Promise<User> {
+    const user = await this.userModel.findByIdAndDelete(id);
+    if (!user) throw new NotFoundException();
     return user;
   }
 
-  async createUser(pUser: any): Promise<User> {
-    const u = pUser.data;
-    const ghId = Number(u.id);
+  async updateUserGroups(id: string, groups: string[]): Promise<User> {
+    const user = await this.userModel.findById(id);
+    if (!user) throw new NotFoundException();
 
-    const user = new this.userModel({
-      ghId,
-      ghName: u.name,
-      ghUsername: u.login,
-    });
+    // @ts-expect-error DTO passes group SKUs, while schema accepts the full group object
+    user.groups = groups;
 
-    const savedUser = await (
-      await user.save()
-    ).populate('member.groups', 'sku');
-    if (savedUser)
-      savedUser.perms = await this.getPermissions(savedUser);
-
-    return savedUser;
+    return user.save();
   }
 
   async getPermissions(user: User): Promise<string[]> {

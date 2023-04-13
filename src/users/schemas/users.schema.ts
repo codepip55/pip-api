@@ -37,10 +37,10 @@ export class User {
   isBanned: boolean;
 
   @Prop({ required: true })
-  username: string;
+  email: string;
 
   @Prop({ required: true })
-  email: string;
+  customDomainEmail: string | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
