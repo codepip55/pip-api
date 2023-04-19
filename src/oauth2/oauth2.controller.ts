@@ -1,13 +1,16 @@
-import { Controller, ForbiddenException, Get, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Post, Query, Req, Res } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { el } from 'date-fns/locale';
+import { getSeconds } from 'date-fns';
+import { ConfigService } from '@nestjs/config';
+import { Request, Response } from 'express';
+import * as argon from 'argon2';
 
 import { Oauth2Service } from './oauth2.service';
-import { getSeconds } from 'date-fns';
-import { Request, Response } from 'express';
-import { el } from 'date-fns/locale';
-import { ConfigService } from '@nestjs/config';
 import { User } from 'src/users/schemas/users.schema';
 
 @Controller('oauth2')
+@ApiTags('OAuth2')
 export class Oauth2Controller {
     constructor(
         private oauthService: Oauth2Service,
@@ -42,7 +45,7 @@ export class Oauth2Controller {
                 state,
                 scope
             })
-            res.redirect(`${this.configService.get<string>('AUTH_CLIENT')}?redirect=${this.configService.get<string>('THIS_URI')}/oauth/authorize&${params.toString()}`)
+            return res.redirect(`${this.configService.get<string>('AUTH_CLIENT')}?redirect=${this.configService.get<string>('THIS_URI')}/oauth/authorize&${params.toString()}`)
         }
 
         const authCode = await this.oauthService.createAuthCode(
@@ -118,5 +121,13 @@ export class Oauth2Controller {
         if (token_type === 'access_token') return await this.oauthService.revokeAccessToken(token);
         if (token_type === 'refresh_token') return await this.oauthService.revokeRefreshToken(token);
         throw new ForbiddenException('Invalid token_type');
+    }
+
+    @Post('password')
+    async verifyPassword(@Body() body: Record<string, string>): Promise<boolean> {
+        let email = body.email;
+        let password = body.password;
+
+        return this.oauthService.verifyPassword(email, password)
     }
 }

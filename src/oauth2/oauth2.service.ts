@@ -1,12 +1,13 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { add } from "date-fns";
 import * as crypto from 'crypto';
+import * as argon from 'argon2';
 
 import { AuthorizationCode, AuthorizationCodeDocument } from "./schemas/authCode.schema";
 import { OAuth2Client } from "./schemas/client.schema";
-import { User } from "src/users/schemas/users.schema";
+import { User, UserDocument } from "src/users/schemas/users.schema";
 import { AccessToken, RefreshToken, RefreshTokenDocument } from "./schemas/token.schema";
 
 @Injectable()
@@ -15,7 +16,8 @@ export class Oauth2Service {
     @InjectModel('authcode') private authCodeModel: Model<AuthorizationCodeDocument>,
     @InjectModel('client') private clientModel: Model<OAuth2Client>,
     @InjectModel('accesstoken') private accessTokenModel: Model<AccessToken>,
-    @InjectModel('refreshtoken') private refreshTokenModel: Model<RefreshTokenDocument>
+    @InjectModel('refreshtoken') private refreshTokenModel: Model<RefreshTokenDocument>,
+    @InjectModel('user') private userModel: Model<UserDocument>
   ) {}
 
   // Utils
@@ -132,5 +134,12 @@ export class Oauth2Service {
 
   async revokeAllUsersRefreshTokens(user: User): Promise<void> {
     await this.refreshTokenModel.deleteMany({ user })
+  }
+
+  // Login
+
+  async verifyPassword(email: string, password: string): Promise<boolean> {
+    const user = await this.userModel.findOne({ email })
+    return await argon.verify(user.password, password)
   }
 }

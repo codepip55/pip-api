@@ -6,6 +6,7 @@ import { Oauth2Service } from './oauth2.service';
 import { OAuth2ClientSchema } from './schemas/client.schema';
 import { AccessTokenSchema, RefreshTokenSchema } from './schemas/token.schema';
 import { AuthorizationCodeSchema } from './schemas/authCode.schema';
+import { UserSchema } from 'src/users/schemas/users.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthorizationCodeSchema } from './schemas/authCode.schema';
       { name: 'accesstoken', schema: AccessTokenSchema },
       { name: 'refreshtoken', schema: RefreshTokenSchema },
       { name: 'authcode', schema: AuthorizationCodeSchema },
+      { name: 'user', schema: UserSchema }
     ]),
   ],
   controllers: [Oauth2Controller],

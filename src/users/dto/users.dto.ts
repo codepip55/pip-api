@@ -27,5 +27,9 @@ export class UserDto {
 
     @IsString()
     @IsOptional()
-    customDomainEmail?: string;
+    customDomainEmail?: string | null;
+
+    @IsString()
+    @IsOptional()
+    password?: string;
 }

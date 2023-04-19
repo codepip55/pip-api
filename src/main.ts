@@ -36,7 +36,8 @@ async function bootstrap() {
     .addTag('Auth')
     .addTag('Emails')
     .addTag('Groups')
-    .addTag('Members')
+    .addTag('Users')
+    .addTag('OAuth2')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
