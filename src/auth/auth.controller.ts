@@ -21,62 +21,62 @@ export class AuthController {
     private configService: ConfigService,
   ) {}
 
-  // @Get('github')
-  // @UseGuards() // TODO: Add Auth guard
-  // authenticateWithGithub(
-  //   @Req() req: Request,
-  //   @Res({ passthrough: true }) res: Response,
-  // ) {
-  //   const { token, expiresIn, refreshToken } = this.authService.getTokens(
-  //     req.user,
-  //   );
+  @Get('authenticate')
+  @UseGuards() // TODO: Add Auth guard
+  authenticateWithGithub(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { token, expiresIn, refreshToken } = this.authService.getTokens(
+      req.user,
+    );
 
-  //   const cookieName = this.configService.get<string>('COOKIE_NAME');
-  //   res.cookie(cookieName, refreshToken, {
-  //     httpOnly: true,
-  //     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  //     domain: this.configService.get<string>('COOKIE_DOMAIN'),
-  //     secure: this.configService.get<string>('COOKIE_DOMAIN') !== 'localhost',
-  //     signed: true,
-  //   });
+    const cookieName = this.configService.get<string>('COOKIE_NAME');
+    res.cookie(cookieName, refreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      domain: this.configService.get<string>('COOKIE_DOMAIN'),
+      secure: this.configService.get<string>('COOKIE_DOMAIN') !== 'localhost',
+      signed: true,
+    });
 
-  //   return { ...req.user, token, expiresIn };
-  // }
+    return { ...req.user, token, expiresIn };
+  }
 
-  // @Get('silent')
-  // async getUserFromRefreshToken(
-  //   @Req() req: Request,
-  //   @Res({ passthrough: true }) res: Response,
-  // ) {
-  //   const cookieName = this.configService.get<string>('COOKIE_NAME');
-  //   const refreshToken = req.signedCookies[cookieName];
+  @Get('silent')
+  async getUserFromRefreshToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const cookieName = this.configService.get<string>('COOKIE_NAME');
+    const refreshToken = req.signedCookies[cookieName];
 
-  //   if (refreshToken === undefined)
-  //     throw new UnauthorizedException('No Refresh Token');
+    if (refreshToken === undefined)
+      throw new UnauthorizedException('No Refresh Token');
 
-  //   const { user, token, expiresIn, newRefreshToken } =
-  //     await this.authService.refresh(refreshToken);
+    const { user, token, expiresIn, newRefreshToken } =
+      await this.authService.refresh(refreshToken);
 
-  //   res.cookie(cookieName, newRefreshToken, {
-  //     httpOnly: true,
-  //     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  //     domain: this.configService.get<string>('COOKIE_DOMAIN'),
-  //     secure: this.configService.get<string>('COOKIE_DOMAIN') !== 'localhost',
-  //     signed: true,
-  //   });
+    res.cookie(cookieName, newRefreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      domain: this.configService.get<string>('COOKIE_DOMAIN'),
+      secure: this.configService.get<string>('COOKIE_DOMAIN') !== 'localhost',
+      signed: true,
+    });
 
-  //   return { user, token, expiresIn };
-  // }
+    return { user, token, expiresIn };
+  }
 
-  // @Get('logout')
-  // async clearRefreshToken(@Res({ passthrough: true }) res: Response) {
-  //   const cookieName = this.configService.get<string>('COOKIE_NAME');
-  //   res.cookie(cookieName, '', {
-  //     httpOnly: true,
-  //     maxAge: 0,
-  //     domain: this.configService.get<string>('COOKIE_DOMAIN'),
-  //     secure: this.configService.get<string>('COOKIE_DOMAIN') !== 'localhost',
-  //     signed: true,
-  //   });
-  // }
+  @Get('logout')
+  async clearRefreshToken(@Res({ passthrough: true }) res: Response) {
+    const cookieName = this.configService.get<string>('COOKIE_NAME');
+    res.cookie(cookieName, '', {
+      httpOnly: true,
+      maxAge: 0,
+      domain: this.configService.get<string>('COOKIE_DOMAIN'),
+      secure: this.configService.get<string>('COOKIE_DOMAIN') !== 'localhost',
+      signed: true,
+    });
+  }
 }

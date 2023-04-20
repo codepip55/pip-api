@@ -31,12 +31,12 @@ export class AuthService {
   async refresh(refreshToken: string) {
     const params = new URLSearchParams({
       grant_type: 'refresh_token',
-      client_id: this.config.get<string>('GITHUB_CLIENT_ID'),
-      client_secret: this.config.get<string>('GITHUB_CLIENT_SECRET'),
+      client_id: this.config.get<string>('PC_CLIENT_ID'),
+      client_secret: this.config.get<string>('PC_CLIENT_SECRET'),
       refresh_token: refreshToken,
     });
 
-    const tokenURL = this.config.get<string>('GITHUB_TOKEN_URL');
+    const tokenURL = this.config.get<string>('PC_TOKEN_URL');
     const $creds = this.http.post(tokenURL, params.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -51,11 +51,11 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const userURL = this.config.get<string>('GITHUB_USER_URI');
+    const userURL = this.config.get<string>('PC_USER_URI');
     const $user = this.http.get(userURL, {
       headers: {
         Authorization: `Bearer ${creds.access_token}`,
-        Accept: 'application/vnd.github+json',
+        Accept: 'application/json',
       },
     });
 
