@@ -130,4 +130,6 @@ export class Oauth2Controller {
 
         return this.oauthService.verifyPassword(email, password)
     }
+
+    // TODO: Add activate account email
 }
