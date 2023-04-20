@@ -15,7 +15,7 @@ import { UserSchema } from 'src/users/schemas/users.schema';
       { name: 'accesstoken', schema: AccessTokenSchema },
       { name: 'refreshtoken', schema: RefreshTokenSchema },
       { name: 'authcode', schema: AuthorizationCodeSchema },
-      { name: 'user', schema: UserSchema }
+      { name: 'user', schema: UserSchema },
     ]),
   ],
   controllers: [Oauth2Controller],

@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose/dist/common';
 import { Model } from 'mongoose';
 import * as argon from 'argon2';
@@ -19,7 +15,7 @@ export class UsersService {
   ) {}
 
   async findById(id: string): Promise<User> {
-    const user = await this.userModel.findById(id)
+    const user = await this.userModel.findById(id);
     if (!user) throw new NotFoundException();
     delete user.password;
     return user;
@@ -29,13 +25,13 @@ export class UsersService {
     const users = await this.userModel
       .find({ $text: { $search: name } })
       .exec();
-    users.forEach(u => delete u.password);
+    users.forEach((u) => delete u.password);
     return users;
   }
 
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userModel.findOne({ email })
-    if (!user) throw new NotFoundException()
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new NotFoundException();
     delete user.password;
     return user;
   }
@@ -50,9 +46,9 @@ export class UsersService {
       email: body.email,
       customDomainEmail: body.customDomainEmail ? body.customDomainEmail : null,
       nameFull: `${body.nameFirst} ${body.nameLast}`,
-      password: await argon.hash(body.password)
-    })
-    const savedUser = await newUser.save()
+      password: await argon.hash(body.password),
+    });
+    const savedUser = await newUser.save();
     delete savedUser.password;
     return savedUser;
   }
@@ -63,7 +59,8 @@ export class UsersService {
 
     if (dto.nameFirst) user.nameFirst = dto.nameFirst;
     if (dto.nameLast) user.nameLast = dto.nameLast;
-    if (dto.nameFirst || dto.nameLast) user.nameFull = `${dto.nameFirst} ${dto.nameLast}`;
+    if (dto.nameFirst || dto.nameLast)
+      user.nameFull = `${dto.nameFirst} ${dto.nameLast}`;
     // @ts-expect-error DTO passes group SKUs, while schema accepts the full group object
     if (dto.groups) user.groups = dto.groups;
     if (dto.isActive) user.isActive = dto.isActive;
