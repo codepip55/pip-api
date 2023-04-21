@@ -16,7 +16,7 @@ import { Request, Response } from 'express';
 import { Oauth2Service } from './oauth2.service';
 import { User } from 'src/users/schemas/users.schema';
 
-@Controller('oauth2')
+@Controller('oauth')
 @ApiTags('OAuth2')
 export class Oauth2Controller {
   constructor(
@@ -174,5 +174,8 @@ export class Oauth2Controller {
     return this.oauthService.verifyPassword(email, password);
   }
 
-  // TODO: Add activate account email
+  @Post('activate')
+  async activateAccount(@Query('code') code: string): Promise<User> {
+    return this.oauthService.handleVerification(code);
+  }
 }

@@ -37,6 +37,11 @@ export class UsersController {
     return this.usersService.createUser(body);
   }
 
+  @Post('signup')
+  createAccount(@Body() body: UserDto) {
+    return this.usersService.createUser(body, true)
+  }
+
   @Put(':id')
   updateUser(@Param('id') id: string, @Body() body: UserDto) {
     return this.usersService.updateUser(id, body);

@@ -4,6 +4,8 @@ import { Model } from 'mongoose';
 import { add } from 'date-fns';
 import * as crypto from 'crypto';
 import * as argon from 'argon2';
+import * as ejs from 'ejs';
+import * as fs from 'fs';
 
 import {
   AuthorizationCode,
@@ -16,17 +18,22 @@ import {
   RefreshToken,
   RefreshTokenDocument,
 } from './schemas/token.schema';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { SignupCodeDocument } from './schemas/signupCode.schema';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class Oauth2Service {
   constructor(
-    @InjectModel('authcode')
-    private authCodeModel: Model<AuthorizationCodeDocument>,
+    @InjectModel('authcode') private authCodeModel: Model<AuthorizationCodeDocument>,
     @InjectModel('client') private clientModel: Model<OAuth2Client>,
     @InjectModel('accesstoken') private accessTokenModel: Model<AccessToken>,
-    @InjectModel('refreshtoken')
-    private refreshTokenModel: Model<RefreshTokenDocument>,
+    @InjectModel('refreshtoken') private refreshTokenModel: Model<RefreshTokenDocument>,
+    @InjectModel('signup') private signupModel: Model<SignupCodeDocument>,
     @InjectModel('user') private userModel: Model<UserDocument>,
+
+    private notificationsService: NotificationsService,
+    private configService: ConfigService
   ) {}
 
   // Utils
@@ -166,5 +173,54 @@ export class Oauth2Service {
   async verifyPassword(email: string, password: string): Promise<boolean> {
     const user = await this.userModel.findOne({ email });
     return await argon.verify(user.password, password);
+  }
+
+  // Signup
+
+  async verifyEmail(name: string, email: string): Promise<void> {
+    const htmlTemplate = fs.readFileSync('src\\oauth2\\emailTemplates\\confrimEmail.ejs', 'utf-8');
+    const compiledTemplate = ejs.compile(htmlTemplate);
+
+    const user = await this.userModel.findOne({ email })
+
+    const code = new this.signupModel({
+      code: this.generateRandomToken(),
+      user: user._id
+    })
+    await code.save()
+
+    const params = new URLSearchParams({
+      code: code.code
+    })
+
+    const data = {
+      name: name,
+      verifyLink: `${this.configService.get<string>('AUTH_CLIENT')}/verify?${params.toString()}`
+    }
+    const compiledEmail = compiledTemplate(data)
+
+    this.notificationsService.sendEmail({
+      toAddresses: [email],
+      subject: 'Verify Email',
+      body: compiledEmail,
+    })
+  }
+
+  async handleVerification(code: string): Promise<User> {
+    // Find user and code
+    const doc = await this.signupModel.findOne({ code })
+    const user = doc.user
+
+    if (!doc) throw new NotFoundException();
+
+    const dbUser = await this.userModel.findById(user._id);
+
+    dbUser.isActive = true;
+
+    dbUser.save()
+
+    await this.signupModel.deleteOne({ code })
+
+    return dbUser;
   }
 }

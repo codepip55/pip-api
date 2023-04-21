@@ -7,6 +7,8 @@ import { OAuth2ClientSchema } from './schemas/client.schema';
 import { AccessTokenSchema, RefreshTokenSchema } from './schemas/token.schema';
 import { AuthorizationCodeSchema } from './schemas/authCode.schema';
 import { UserSchema } from 'src/users/schemas/users.schema';
+import { SignupCodeSchema } from './schemas/signupCode.schema';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -16,9 +18,12 @@ import { UserSchema } from 'src/users/schemas/users.schema';
       { name: 'refreshtoken', schema: RefreshTokenSchema },
       { name: 'authcode', schema: AuthorizationCodeSchema },
       { name: 'user', schema: UserSchema },
+      { name: 'signup', schema: SignupCodeSchema }
     ]),
+    NotificationsModule
   ],
   controllers: [Oauth2Controller],
   providers: [Oauth2Service],
+  exports: [Oauth2Service]
 })
 export class Oauth2Module {}

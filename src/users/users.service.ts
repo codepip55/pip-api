@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose/dist/common';
 import { Model } from 'mongoose';
 import * as argon from 'argon2';
@@ -6,12 +6,14 @@ import * as argon from 'argon2';
 import { User, UserDocument } from './schemas/users.schema';
 import { GroupsService } from 'src/groups/groups.service';
 import { UserDto } from './dto/users.dto';
+import { Oauth2Service } from 'src/oauth2/oauth2.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel('user') private userModel: Model<UserDocument>,
     private groupsService: GroupsService,
+    private oauth2Service: Oauth2Service
   ) {}
 
   async findById(id: string): Promise<User> {
@@ -36,21 +38,44 @@ export class UsersService {
     return user;
   }
 
-  async createUser(body: UserDto): Promise<User> {
-    const newUser = new this.userModel({
-      nameFirst: body.nameFirst,
-      nameLast: body.nameLast,
-      groups: body.groups,
-      isActive: body.isActive,
-      isBanned: body.isBanned,
-      email: body.email,
-      customDomainEmail: body.customDomainEmail ? body.customDomainEmail : null,
-      nameFull: `${body.nameFirst} ${body.nameLast}`,
-      password: await argon.hash(body.password),
-    });
-    const savedUser = await newUser.save();
-    delete savedUser.password;
-    return savedUser;
+  async createUser(body: UserDto, signup: boolean = false): Promise<User> {
+    const existingUser = await this.userModel.findOne({ email: body.email })
+    if (existingUser) throw new ForbiddenException('User with this email already exists.');
+
+    if (!signup) {
+      const newUser = new this.userModel({
+        nameFirst: body.nameFirst,
+        nameLast: body.nameLast,
+        groups: body.groups,
+        isActive: body.isActive,
+        isBanned: body.isBanned,
+        email: body.email,
+        customDomainEmail: body.customDomainEmail ? body.customDomainEmail : null,
+        nameFull: `${body.nameFirst} ${body.nameLast}`,
+        password: await argon.hash(body.password),
+      });
+      const savedUser = await newUser.save();
+      delete savedUser.password;
+      return savedUser;
+    } else {
+      const newUser = new this.userModel({
+        nameFirst: body.nameFirst,
+        nameLast: body.nameLast,
+        groups: body.groups,
+        isActive: false,
+        isBanned: body.isBanned,
+        email: body.email,
+        customDomainEmail: body.customDomainEmail ? body.customDomainEmail : null,
+        nameFull: `${body.nameFirst} ${body.nameLast}`,
+        password: await argon.hash(body.password),
+      });
+      const savedUser = await newUser.save();
+      delete savedUser.password;
+
+      this.oauth2Service.verifyEmail(savedUser.nameFirst, savedUser.email);
+
+      return savedUser;
+    }
   }
 
   async updateUser(id: string, dto: UserDto): Promise<User> {

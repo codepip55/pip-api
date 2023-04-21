@@ -10,7 +10,6 @@ export class NotificationsService {
 
   async sendEmail(email: {
     toAddresses: string[];
-    content: object;
     subject: string;
     body: string;
   }) {
