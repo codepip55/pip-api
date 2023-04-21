@@ -508,6 +508,7 @@
                       <h1>Hi <%= name %>,</h1>
                       <p>Thanks for creating an account! Before you are able to use your account, you must verify it by clicking the button below.</p>
                       <form action="<%= verifyLink %>">
+                        <input type="hidden" name="code" value="<%= code %>">
                         <button type="submit" style="padding: 16px; display: flex; margin-left: auto; margin-right: auto; background-color: #0496FF; border: none; border-radius: 6px; color: #ffffff;">
                           Confirm Email
                         </button>

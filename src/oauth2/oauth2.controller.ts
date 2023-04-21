@@ -174,7 +174,7 @@ export class Oauth2Controller {
     return this.oauthService.verifyPassword(email, password);
   }
 
-  @Post('activate')
+  @Get('activate')
   async activateAccount(@Query('code') code: string): Promise<User> {
     return this.oauthService.handleVerification(code);
   }

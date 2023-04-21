@@ -188,14 +188,11 @@ export class Oauth2Service {
       user: user._id
     })
     await code.save()
-
-    const params = new URLSearchParams({
-      code: code.code
-    })
-
+    
     const data = {
       name: name,
-      verifyLink: `${this.configService.get<string>('AUTH_CLIENT')}/verify?${params.toString()}`
+      verifyLink: `${this.configService.get<string>('AUTH_CLIENT')}/verify`,
+      code: code.code
     }
     const compiledEmail = compiledTemplate(data)
 
@@ -207,13 +204,17 @@ export class Oauth2Service {
   }
 
   async handleVerification(code: string): Promise<User> {
+    if (!code) throw new NotFoundException('No code in request');
     // Find user and code
     const doc = await this.signupModel.findOne({ code })
-    const user = doc.user
+      .populate('user', 'isActive')
+    if (!doc) throw new NotFoundException();
+    // @ts-ignore
+    const user = doc.user.length > 0 ? doc.user[0] : doc.user
 
     if (!doc) throw new NotFoundException();
 
-    const dbUser = await this.userModel.findById(user._id);
+    const dbUser = await this.userModel.findById(user._id)
 
     dbUser.isActive = true;
 
