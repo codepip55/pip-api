@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { add } from 'date-fns';
@@ -170,9 +170,10 @@ export class Oauth2Service {
 
   // Login
 
-  async verifyPassword(email: string, password: string): Promise<boolean> {
+  async verifyPassword(email: string, password: string): Promise<User> {
     const user = await this.userModel.findOne({ email });
-    return await argon.verify(user.password, password);
+    if (await argon.verify(user.password, password)) return user;
+      else throw new ForbiddenException();
   }
 
   // Signup

@@ -11,6 +11,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
+import { PipAuthGuard } from './pip-auth/pip-auth.guard';
 
 @ApiBearerAuth()
 @Controller('auth')
@@ -22,7 +23,7 @@ export class AuthController {
   ) {}
 
   @Get('authenticate')
-  @UseGuards() // TODO: Add Auth guard
+  @UseGuards(PipAuthGuard)
   authenticateWithGithub(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,

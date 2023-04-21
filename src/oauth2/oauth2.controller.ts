@@ -167,7 +167,7 @@ export class Oauth2Controller {
   }
 
   @Post('password')
-  async verifyPassword(@Body() body: Record<string, string>): Promise<boolean> {
+  async verifyPassword(@Body() body: Record<string, string>): Promise<User> {
     const email = body.email;
     const password = body.password;
 
