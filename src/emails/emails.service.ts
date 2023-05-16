@@ -14,6 +14,7 @@ import { Request } from 'express';
 import { Email, EmailDocument } from './schemas/email.schema';
 import { CreateEmailDto, UpdateEmailDto } from './dto/email.dto';
 import { User } from 'src/users/schemas/users.schema';
+import * as Parser from 'parse-multipart-data';
 
 @Injectable()
 export class EmailsService {
@@ -226,7 +227,8 @@ export class EmailsService {
   }
 
   async notifyReceive(req: any) {
-    console.log(req);
+    let boundary = Parser.getBoundary(req)
+    let parsed = Parser.parse(req, boundary)
 
     SendGrid.send({
       to: {
@@ -239,7 +241,7 @@ export class EmailsService {
       content: [
         {
           type: 'text/html',
-          value: '<h1>Received Email</h1><p>' + req + '</p>',
+          value: '<h1>Received Email</h1><p>' + parsed + '</p>',
         },
       ],
     });
