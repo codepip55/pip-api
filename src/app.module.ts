@@ -10,7 +10,6 @@ import { UsersModule } from './users/users.module';
 import { LoggingFilter } from './utils/logging.filter';
 import { GroupsModule } from './groups/groups.module';
 import { EmailsModule } from './emails/emails.module';
-import { Oauth2Module } from './oauth2/oauth2.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
@@ -28,7 +27,6 @@ import { NotificationsModule } from './notifications/notifications.module';
     GroupsModule,
     EmailsModule,
     ScheduleModule.forRoot(),
-    Oauth2Module,
     NotificationsModule,
   ],
   controllers: [AppController],
