@@ -19,7 +19,6 @@ import { EmailsService } from './emails.service';
 import { Email } from './schemas/email.schema';
 import { User } from '../users/schemas/users.schema';
 import { RequirePerms } from 'src/auth/permissions/permissions.decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('emails')
 @ApiBearerAuth()
@@ -124,8 +123,7 @@ export class EmailsController {
   }
 
   @Post('receive')
-  @UseInterceptors(FileInterceptor('text'))
-  receiveEmail(@Req() req: Request, @UploadedFile() file: any) {
-    return this.emailService.notifyReceive(file);
+  receiveEmail(@Req() req: Request) {
+    return this.emailService.notifyReceive(req);
   }
 }
