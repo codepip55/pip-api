@@ -225,7 +225,7 @@ export class EmailsService {
     });
   }
 
-  async notifyReceive(req: Request) {
+  async notifyReceive(req: any) {
     console.log(req);
 
     SendGrid.send({
