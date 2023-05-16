@@ -29,8 +29,8 @@ export class LoggingFilter implements ExceptionFilter {
 
     let eventId: string;
     if (!ignoreStatuses.includes(status)) {
-      const ghId = (request.user as User)?.ghId;
-      const username = ghId?.toString();
+      const userId = (request.user as User)?._id;
+      const username = userId?.toString();
       eventId = captureException(exception, {
         user: username ? { username } : undefined,
       });

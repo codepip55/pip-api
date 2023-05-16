@@ -8,7 +8,6 @@ import { UsersModule } from 'src/users/users.module';
 import { HeaderApiKeyStrategy } from './auth-header-api-key.strategy';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { GithubStrategy } from './github/github.strategy';
 import { JwtStrategy } from './jwt/jwt.strategy';
 
 @Module({
@@ -27,6 +26,6 @@ import { JwtStrategy } from './jwt/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GithubStrategy, HeaderApiKeyStrategy],
+  providers: [AuthService, JwtStrategy, HeaderApiKeyStrategy],
 })
 export class AuthModule {}

@@ -1,12 +1,10 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose/dist/common';
-import { User, UserDocument } from './schemas/users.schema';
 import { Model } from 'mongoose';
+
+import { User, UserDocument } from './schemas/users.schema';
 import { GroupsService } from 'src/groups/groups.service';
+import { UserDto } from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
@@ -16,80 +14,92 @@ export class UsersService {
   ) {}
 
   async findById(id: string): Promise<User> {
-    const user = await this.userModel
-      .findById(id)
-      .populate('member', 'nameFull email')
-      .exec();
-    if (!user) throw new NotFoundException();
-    return user;
-  }
-
-  async findByGhIdAndUpdate(pUser: any): Promise<User> {
-    const u = pUser.data;
-    const ghId = u.id;
-
-    const user = await this.userModel
-      .findOneAndUpdate(
-        { ghId },
-        {
-          ghName: u.name,
-          ghUsername: u.login,
-        },
-        { new: true },
-      )
-      .populate('member.groups', 'sku')
-      .populate('member', 'nameFull groups')
-      .exec();
-
-    if (user.member) user.member.perms = await this.getPermissions(user);
-
-    return user;
-  }
-
-  async findByGhId(id: string | number): Promise<User> {
-    id = Number(id);
-    const user = await this.userModel
-      .findOne({ ghId: id })
-      .populate('member.groups', 'name description sku')
-      .populate('member', 'nameFull groups')
-      .exec();
-
+    const user = await this.userModel.findById(id);
     if (!user) throw new NotFoundException();
 
-    if (user.member) user.member.perms = await this.getPermissions(user);
+    return user;
+  }
+
+  async findByName(name: string): Promise<User[]> {
+    const users = await this.userModel
+      .find({ $text: { $search: name } })
+      .exec();
+
+    return users;
+  }
+
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new NotFoundException();
 
     return user;
   }
 
-  async createUser(pUser: any): Promise<User> {
-    const u = pUser.data;
-    const ghId = Number(u.id);
+  async createUser(body: UserDto): Promise<User> {
+    const existingUser = await this.userModel.findOne({ email: body.email })
+    if (existingUser) throw new ForbiddenException('User with this email already exists.');
 
-    const user = new this.userModel({
-      ghId,
-      ghName: u.name,
-      ghUsername: u.login,
+    const newUser = new this.userModel({
+      nameFirst: body.nameFirst,
+      nameLast: body.nameLast,
+      groups: body.groups,
+      isActive: body.isActive,
+      isBanned: body.isBanned,
+      email: body.email,
+      customDomainEmail: body.customDomainEmail ? body.customDomainEmail : null,
+      nameFull: `${body.nameFirst} ${body.nameLast}`,
     });
+    const savedUser = await newUser.save();
 
-    const savedUser = await (
-      await user.save()
-    ).populate('member.groups', 'sku');
-    if (savedUser.member)
-      savedUser.member.perms = await this.getPermissions(savedUser);
+    return savedUser;
+  }
+
+  async updateUser(id: string, dto: UserDto): Promise<User> {
+    const user = await this.userModel.findById(id);
+    if (!user) throw new NotFoundException();
+
+    if (dto.nameFirst) user.nameFirst = dto.nameFirst;
+    if (dto.nameLast) user.nameLast = dto.nameLast;
+    if (dto.nameFirst || dto.nameLast)
+      user.nameFull = `${dto.nameFirst} ${dto.nameLast}`;
+    // @ts-expect-error DTO passes group SKUs, while schema accepts the full group object
+    if (dto.groups) user.groups = dto.groups;
+    if (dto.isActive) user.isActive = dto.isActive;
+    if (dto.isBanned) user.isBanned = dto.isBanned;
+    if (dto.email) user.email = dto.email;
+
+    if (dto.customDomainEmail) user.customDomainEmail = dto.customDomainEmail;
+
+    return user.save();
+  }
+
+  async deleteUser(id: string): Promise<User> {
+    const user = await this.userModel.findByIdAndDelete(id);
+    if (!user) throw new NotFoundException();
+
+    return user;
+  }
+
+  async updateUserGroups(id: string, groups: string[]): Promise<User> {
+    const user = await this.userModel.findById(id);
+    if (!user) throw new NotFoundException();
+
+    // @ts-expect-error DTO passes group SKUs, while schema accepts the full group object
+    user.groups = groups;
+
+    const savedUser = await user.save();
 
     return savedUser;
   }
 
   async getPermissions(user: User): Promise<string[]> {
-    if (!user.member)
-      throw new ForbiddenException('No member linked with this user!');
-    if (!user.member.groups || user.member.groups.length == 0) return [];
+    if (!user.groups || user.groups.length == 0) return [];
 
     const { data: allGroups } = await this.groupsService.findAll();
     const userPerms = new Set<string>();
 
     // Add permissions from each of user's groups
-    user.member.groups.forEach((userGroup) => {
+    user.groups.forEach((userGroup) => {
       const groupRecord = allGroups.find((g) => g.sku === userGroup.sku);
       groupRecord.perms.forEach((p) => userPerms.add(p));
     });
@@ -98,8 +108,7 @@ export class UsersService {
   }
 
   hasPerms(user: User, ...perms: any[]) {
-    if (!user.member) return false;
     if (user === null) return false;
-    return perms.every((p) => user.member.perms.includes(p));
+    return perms.every((p) => user.perms.includes(p));
   }
 }
