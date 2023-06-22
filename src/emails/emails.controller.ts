@@ -165,7 +165,7 @@ export class EmailsController {
   }
 
   @Post('receive')
-  receiveEmail(@Req() req: Request) {
-    return this.emailService.notifyReceive(req);
+  receiveEmail(@Body() body: any) {
+    return this.emailService.notifyReceive(body);
   }
 }
