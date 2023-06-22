@@ -227,25 +227,6 @@ export class EmailsService {
   }
 
   async notifyReceive(req: any) {
-    let boundary = Parser.getBoundary(req)
-    let parsed = Parser.parse(req, boundary)
-
-    SendGrid.send({
-      to: {
-        email: 'pepcplace@gmail.com',
-      },
-      from: {
-        email: 'noreply@pepijncolenbrander.com',
-      },
-      subject: 'Received Email',
-      content: [
-        {
-          type: 'text/html',
-          value: '<h1>Received Email</h1><p>' + parsed + '</p>',
-        },
-      ],
-    });
-
-    console.log('EMAIL', req, boundary, parsed);
+    console.log(req)
   }
 }
