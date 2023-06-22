@@ -26,9 +26,15 @@ import { RequirePerms } from 'src/auth/permissions/permissions.decorator';
 export class EmailsController {
   constructor(private emailService: EmailsService) {}
 
+  /**
+   * Get all emails
+   * @param qs Query
+   * @param req Request
+   * @returns Emails matching query
+   */
   @Get()
   @RequirePerms()
-  getAllEmails(
+  async getAllEmails(
     @Query() qs: Record<string, any>,
     @Req() req: Request,
   ): Promise<{ count: number; data: Email[] }> {
@@ -45,17 +51,28 @@ export class EmailsController {
     );
   }
 
+  /**
+   * Find email by ID
+   * @param id Email ID
+   * @param req Request
+   * @returns Email Document
+   */
   @Get('id/:id')
   @RequirePerms()
-  getEmailById(@Param('id') id: string, @Req() req: Request): Promise<Email> {
+  async getEmailById(@Param('id') id: string, @Req() req: Request): Promise<Email> {
     const user = req.user as User;
 
     return this.emailService.findEmailById(id, user.email);
   }
 
+  /**
+   * Get sent emails
+   * @param req Request
+   * @returns Email Documents
+   */
   @Get('sent')
   @RequirePerms()
-  getSentEmails(
+  async getSentEmails(
     @Req() req: Request,
   ): Promise<{ count: number; data: Email[] }> {
     const user = req.user as User;
@@ -70,7 +87,7 @@ export class EmailsController {
    */
   @Get('sender/:query')
   @RequirePerms()
-  getEmailsFromSender(
+  async getEmailsFromSender(
     @Param('query') q: string,
     @Req() req: Request,
   ): Promise<{ count: number; data: Email[] }> {
@@ -79,9 +96,15 @@ export class EmailsController {
     return this.emailService.findEmailBySender(q, user.email);
   }
 
+  /**
+   * Get emails by tags
+   * @param q tags
+   * @param req Request
+   * @returns Email Documents
+   */
   @Get('tags')
   @RequirePerms()
-  getEmailsByTags(
+  async getEmailsByTags(
     @Query() q: string,
     @Req() req: Request,
   ): Promise<{ count: number; data: Email[] }> {
@@ -91,9 +114,16 @@ export class EmailsController {
     return this.emailService.findEmailsByTags(tags, user.email);
   }
 
+  /**
+   * Update Email
+   * @param id Email ID
+   * @param body Email DTO
+   * @param req Request
+   * @returns Updated Email
+   */
   @Put('id/:id')
   @RequirePerms()
-  updateEmail(
+  async updateEmail(
     @Param('id') id: string,
     @Body() body: UpdateEmailDto,
     @Req() req: Request,
@@ -103,9 +133,15 @@ export class EmailsController {
     return this.emailService.updateEmail(id, body, user.email);
   }
 
+  /**
+   * Create Email
+   * @param body Email DTO
+   * @param req Request
+   * @returns New Email
+   */
   @Post()
   @RequirePerms()
-  createEmail(
+  async createEmail(
     @Body() body: CreateEmailDto,
     @Req() req: Request,
   ): Promise<Email> {
@@ -114,16 +150,22 @@ export class EmailsController {
     return this.emailService.createEmail(body, user);
   }
 
+  /**
+   * Delete Email
+   * @param id Email ID
+   * @param req Request
+   * @returns Deleted Email
+   */
   @Delete(':id')
   @RequirePerms()
-  deleteEmail(@Param('id') id: string, @Req() req: Request): Promise<Email> {
+  async deleteEmail(@Param('id') id: string, @Req() req: Request): Promise<Email> {
     const user = req.user as User;
 
     return this.emailService.markEmailForDelete(id, user.email);
   }
 
   @Post('receive')
-  receiveEmail(@Req() req: Request) {
-    return this.emailService.notifyReceive(req);
+  receiveEmail(@Body() body: any) {
+    return this.emailService.notifyReceive(body);
   }
 }

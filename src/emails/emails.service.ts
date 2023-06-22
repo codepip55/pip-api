@@ -246,6 +246,6 @@ export class EmailsService {
       ],
     });
 
-    console.log('Notified');
+    console.log('EMAIL', req, boundary, parsed);
   }
 }
