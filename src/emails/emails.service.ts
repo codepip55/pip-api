@@ -225,8 +225,4 @@ export class EmailsService {
       ],
     });
   }
-
-  async notifyReceive(req: any) {
-    console.log(req)
-  }
 }
