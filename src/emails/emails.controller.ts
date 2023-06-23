@@ -166,6 +166,10 @@ export class EmailsController {
 
   @Post('receive')
   receiveEmail(@Body() body: any) {
-    return this.emailService.notifyReceive(body);
+    try {
+      console.log(body)
+    } catch (error) {
+      console.error(error)
+    }
   }
 }
