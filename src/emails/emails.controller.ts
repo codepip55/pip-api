@@ -167,7 +167,7 @@ export class EmailsController {
   @Post('receive')
   receiveEmail(@Body() body: any) {
     try {
-      console.log(body)
+      console.log('received email', body)
     } catch (error) {
       console.error(error)
     }
